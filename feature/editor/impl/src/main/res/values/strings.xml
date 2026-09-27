@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="new_session">New session</string>
+    <string name="edit_session">Edit session</string>
+    <string name="session_name">Session name</string>
+    <string name="search_apps">Search apps</string>
+    <string name="save">Save</string>
+    <string name="back">Back</string>
+
+    <plurals name="apps_selected">
+        <item quantity="one">%d app selected</item>
+        <item quantity="other">%d apps selected</item>
+    </plurals>
+</resources>

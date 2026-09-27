@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_label">LockalTime app blocker</string>
+    <string name="accessibility_service_description">Detects when a blocked app is opened during an active session and covers it with a block screen. LockalTime does not read screen content.</string>
+
+    <string name="blocked_title">%1$s is blocked</string>
+    <string name="blocked_message">You\'re in the \"%1$s\" session. Stay focused!</string>
+    <string name="blocked_go_home">Back to home screen</string>
+    <string name="blocked_unblocks_at">Unblocks at %1$s</string>
+</resources>

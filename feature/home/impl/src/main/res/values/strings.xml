@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">LockalTime</string>
+    <string name="new_session">New session</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="start_session">Start session</string>
+    <string name="stop_session">Stop session</string>
+    <string name="session_running">Running</string>
+    <string name="empty_sessions">No sessions yet.\nCreate one and choose the apps to block.</string>
+    <string name="active_session_title">%1$s is active</string>
+    <string name="ends_at_remaining">Ends at %1$s · %2$s left</string>
+
+    <string name="choose_duration">Block for how long?</string>
+    <string name="until_stopped">Until I stop it</string>
+    <string name="end_early_title">End session early?</string>
+    <string name="end_early_message">There\'s still %1$s left.</string>
+    <string name="end_early_confirm">End session</string>
+    <string name="keep_going">Keep going</string>
+
+    <string name="permission_title">Blocking permission needed</string>
+    <string name="permission_message">To block apps, enable \"LockalTime app blocker\" in Accessibility settings.</string>
+    <string name="permission_open_settings">Open settings</string>
+
+    <plurals name="apps_count">
+        <item quantity="one">%d app blocked</item>
+        <item quantity="other">%d apps blocked</item>
+    </plurals>
+    <plurals name="active_session_summary">
+        <item quantity="one">Blocking %1$d app · started %2$s</item>
+        <item quantity="other">Blocking %1$d apps · started %2$s</item>
+    </plurals>
+    <plurals name="duration_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="duration_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+</resources>
