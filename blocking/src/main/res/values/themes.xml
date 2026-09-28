@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The block screen must be opaque from its very first frame and must not animate in, or
+         the app underneath shows through while Compose draws. The light/dark split keeps that
+         first frame close to the surface colour Compose paints next. -->
+    <style name="Theme.LockalTime.Blocked" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>

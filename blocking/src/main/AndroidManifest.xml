@@ -8,7 +8,8 @@
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTask"
-            android:taskAffinity="com.lockaltime.blocked" />
+            android:taskAffinity="com.lockaltime.blocked"
+            android:theme="@style/Theme.LockalTime.Blocked" />
 
         <service
             android:name=".AppBlockerService"
