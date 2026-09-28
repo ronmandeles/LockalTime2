@@ -10,6 +10,8 @@ class TestBlockingServiceMonitor(enabled: Boolean = true) : BlockingServiceMonit
 
     override val isEnabled: Flow<Boolean> = state
 
+    override val serviceComponent: String = "com.lockaltime/com.lockaltime.blocking.AppBlockerService"
+
     fun setEnabled(enabled: Boolean) {
         state.value = enabled
     }

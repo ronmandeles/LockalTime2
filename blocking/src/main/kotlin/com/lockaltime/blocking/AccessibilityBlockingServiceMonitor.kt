@@ -23,6 +23,9 @@ internal class AccessibilityBlockingServiceMonitor @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : BlockingServiceMonitor {
 
+    override val serviceComponent: String =
+        ComponentName(context, AppBlockerService::class.java).flattenToString()
+
     override val isEnabled: Flow<Boolean> = callbackFlow {
         val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean) {

@@ -3,6 +3,7 @@ package com.lockaltime.core.domain
 import com.lockaltime.core.model.ActiveSession
 import com.lockaltime.core.model.BlockSession
 import com.lockaltime.core.model.BlockedApp
+import com.lockaltime.core.model.SessionInvite
 import com.lockaltime.core.testing.TestClock
 import com.lockaltime.core.testing.repository.TestActiveSessionRepository
 import com.lockaltime.core.testing.repository.TestSessionRepository
@@ -80,6 +81,55 @@ class SessionManagerTest {
         assertTrue(manager.start("s2", duration = null))
 
         assertEquals("s2", manager.activeSession.first()?.sessionId)
+    }
+
+    @Test
+    fun `join copies the invite into the active session, starting now`() = runTest {
+        val invite = SessionInvite("host1", "Group study", setOf("a.pkg", "b.pkg"), endsAtMillis = 60_000L)
+
+        assertEquals(JoinResult.Joined, manager.join(invite))
+
+        assertEquals(
+            ActiveSession("host1", "Group study", setOf("a.pkg", "b.pkg"), startedAtMillis = 1_000L, endsAtMillis = 60_000L),
+            manager.activeSession.first(),
+        )
+    }
+
+    @Test
+    fun `join accepts an open-ended invite`() = runTest {
+        assertEquals(JoinResult.Joined, manager.join(SessionInvite("host1", "Group study", setOf("a.pkg"))))
+
+        assertNull(manager.activeSession.first()?.endsAtMillis)
+    }
+
+    @Test
+    fun `join rejects an invite whose time is up`() = runTest {
+        val invite = SessionInvite("host1", "Group study", setOf("a.pkg"), endsAtMillis = 1_000L)
+
+        assertEquals(JoinResult.Expired, manager.join(invite))
+
+        assertNull(manager.activeSession.first())
+    }
+
+    @Test
+    fun `join does not replace a running session`() = runTest {
+        sessions.upsert(study)
+        manager.start("s1", 25.minutes)
+
+        assertEquals(JoinResult.SessionRunning, manager.join(SessionInvite("host1", "Group study", setOf("b.pkg"))))
+
+        assertEquals("s1", manager.activeSession.first()?.sessionId)
+    }
+
+    @Test
+    fun `join replaces a session whose time is up`() = runTest {
+        sessions.upsert(study)
+        manager.start("s1", 25.minutes)
+        clock.nowMillis += 25 * 60_000L
+
+        assertEquals(JoinResult.Joined, manager.join(SessionInvite("host1", "Group study", setOf("b.pkg"))))
+
+        assertEquals("host1", manager.activeSession.first()?.sessionId)
     }
 
     @Test

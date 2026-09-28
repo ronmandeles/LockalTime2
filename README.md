@@ -43,6 +43,7 @@ feature/editor/       api: SessionEditorRoute + navigateToSessionEditor()
                       impl: screen, ViewModel, UI state
 core/model/           Pure Kotlin domain models (no Android, no serialization)
 core/domain/          SessionManager, BlockPolicy
+core/invite/          Pure Kotlin: the QR invite format (wire model + InviteCodec)
 core/data/            Repository interfaces + implementations, BlockingServiceMonitor
 core/datastore/       On-disk JSON schema, serializers, DataStore instances
 core/common/          Clock, coroutine dispatchers, application scope
@@ -66,18 +67,34 @@ The main design decision is the split between a **`BlockSession`** (a saved conf
 and the **`ActiveSession`** (a snapshot of what is being enforced right now):
 
 ```
- local "Start"  ─┐
-                 ├─► SessionManager ─► ActiveSessionRepository ─► AppBlockerService
- QR join (future)┘
+ local "Start" ─┐
+                ├─► SessionManager ─► ActiveSessionRepository ─► AppBlockerService
+ QR join ───────┘
 ```
 
 The blocking service only observes `ActiveSession`, so it doesn't care where a session came
-from. This is what makes the planned features additive:
+from. This is what makes new ways of entering a session additive.
 
-- **QR join:** add a `SessionManager.join(invite)` that writes an `ActiveSession` built from
-  a remote payload. Give the invite its own `@Serializable` wire model (e.g. in a new
-  `core:network` module) mapped to `ActiveSession`, the same way `core:datastore` does for
-  storage. It can then be encoded into a QR code or fetched from a backend by session id.
+### QR join
+
+A running session can be shared: **Share** on the active session shows a QR code, and another
+phone taps **Join** and scans it to block the same apps until the same end time.
+
+- **It's a copy, not a live link.** `SessionManager.join(invite)` writes a new `ActiveSession` on
+  the joining phone that starts now and ends at the host's absolute `endsAtMillis`. Stopping on
+  either phone doesn't affect the other. Apps the joiner doesn't have are listed in the invite but
+  have no effect.
+- **Format** (`core:invite`): `lockaltime://join?d=` + base64url(zlib(JSON)), with short keys such
+  as `{"v":1,"id":…,"n":…,"p":[…],"e":…}`. The wire model is separate from the domain
+  `SessionInvite`, like `core:datastore`'s entities. Unknown keys are ignored, and a higher `v`
+  shows "update the app" rather than "not a valid code". `InviteCodecTest` pins the v1 format.
+  It's a URI so a deep link from the system camera can be added later without changing it.
+- **Scanning** is in-app: a CameraX preview whose frames are decoded by zxing-core
+  (`InviteScanner.kt`), so it works without Google Play services. It asks for the camera
+  permission on the first Join. **QR drawing** also uses zxing-core.
+
+### Next steps
+
 - **Shared/live sessions** (host stops → everyone unblocks): back `ActiveSessionRepository`
   with a remote source (e.g. Firestore or a WebSocket) and bind it in `DataModule`. The UI and
   service stay unchanged.

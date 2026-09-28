@@ -13,6 +13,8 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
             dependencies {
                 add("testImplementation", libs.findLibrary("junit").get())
             }
+            // So `./gradlew testDebugUnitTest` also runs the tests of pure Kotlin modules.
+            tasks.register("testDebugUnitTest") { dependsOn("test") }
         }
     }
 }

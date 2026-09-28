@@ -9,4 +9,7 @@ import kotlinx.coroutines.flow.Flow
  */
 interface BlockingServiceMonitor {
     val isEnabled: Flow<Boolean>
+
+    /** The service's flattened component name, which Accessibility settings uses to find its entry. */
+    val serviceComponent: String
 }
