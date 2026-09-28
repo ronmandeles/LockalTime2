@@ -15,13 +15,28 @@ Run the unit tests before reporting a change as done.
 
 ## Skills and precedence
 
-- `claude-android-skill` (global) is the structural baseline: module layout, convention plugins,
-  Screen/ViewModel/repository shape, test doubles. Load it before any Kotlin change. Ignore its
-  version table: this project is on Kotlin 2.x with the Compose compiler Gradle plugin.
-- `android-skills:*` (plugin) are reference guardrails. Consult `compose`, `android-data-layer`,
-  `datastore`, `android-retrofit`, `kmp-boundaries`, `android-testing`, `kotlin-coroutines`,
-  `kotlin-flows` and `gradle-build-performance` for those topics.
-- Where they disagree on UI conventions, this file wins: no effects `Channel`, no `Actions`
+Load skills before reading a diff, for reviews as well as edits.
+
+- Always, for any Kotlin or Android change: `claude-android-skill` (global), the structural
+  baseline (module layout, Screen/ViewModel/repository shape, test doubles). Ignore its version
+  table and `gradle-setup.md`: this project is on Kotlin 2.x with the Compose compiler Gradle
+  plugin.
+- `android-skills:*` (plugin) has a skill for every kind of Android task. Load every one whose
+  topic the change touches, before reading the diff; missing a relevant one is the failure to
+  avoid. The usual matches:
+  - a file with `@Composable`: `android-skills:compose`
+  - `stateIn`, `combine` or a `MutableStateFlow` in a ViewModel: `android-skills:kotlin-flows`
+  - dispatchers, scopes, cancellation, executor bridges: `android-skills:kotlin-coroutines`
+  - tests: `android-skills:android-testing`. Test-first and the two-schedulers trap
+    (`MainDispatcherRule` vs `runTest`) apply here; its Compose UI, KMP and screenshot sections
+    do not.
+  - repositories: `android-data-layer`; DataStore: `datastore`; network: `android-retrofit`;
+    platform boundaries: `kmp-boundaries`; visibility questions: `modularization`; convention
+    plugins: `android-gradle-logic`; build speed: `gradle-build-performance`; Logcat, ANRs,
+    crashes: `android-debugging`.
+- Not by default: `android-skills:android-dev`. Its house defaults are already in this file and
+  its greenfield UI convention is the one rejected below.
+- Where a skill disagrees with this file, this file wins: no effects `Channel`, no `Actions`
   interface, no four-bucket UiState. See "State and screens" below.
 
 ## Module rules
@@ -37,8 +52,10 @@ Run the unit tests before reporting a change as done.
 - `core:domain` holds `SessionManager`, the only way to start, join or stop a session, and
   `BlockPolicy`. `AppBlockerService` depends on `SessionManager` alone (active session, clock,
   expiry cleanup) and never reads `SessionRepository`.
-- New code declares the lowest visibility that compiles. Repository implementations and screens
-  are `internal`. UiState and Action types are public today and may be narrowed.
+- New code declares the lowest visibility that compiles: start `private`, widen to `internal`
+  only for another file in the same module, to public only for a real consumer in another
+  module. Repository implementations and screens are `internal`. UiState and Action types are
+  public today and may be narrowed.
 
 ## Three model layers, never merged
 
@@ -113,4 +130,7 @@ When a network layer is added it is a fourth: DTOs in `core:network`, mapped at 
 ## Style
 
 - Kotlin official style, trailing commas in multi-line parameter lists.
-- Comments explain why, not what, in the voice of the existing files.
+- Comments explain why, not what, in the voice of the existing files. A comment the reader could
+  infer from the code beside it is deleted.
+- Widen an existing mechanism (a dialog field, an action, a repository method) before adding a
+  parallel one beside it.
