@@ -1,5 +1,6 @@
 package com.lockaltime.feature.home.impl
 
+import androidx.lifecycle.SavedStateHandle
 import com.lockaltime.core.domain.SessionManager
 import com.lockaltime.core.invite.DecodedInvite
 import com.lockaltime.core.invite.InviteCodec
@@ -55,8 +56,21 @@ class HomeViewModelTest {
 
     @Before
     fun setup() {
-        viewModel = HomeViewModel(sessionRepository, sessionManager, installedAppsRepository, blockingServiceMonitor)
+        viewModel = homeViewModel()
     }
+
+    /** @param inviteCode a link the app was opened with, as the deep link delivers it. */
+    private fun homeViewModel(
+        inviteCode: String? = null,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    ) = HomeViewModel(
+        inviteCode,
+        savedStateHandle,
+        sessionRepository,
+        sessionManager,
+        installedAppsRepository,
+        blockingServiceMonitor,
+    )
 
     @Test
     fun `uiState is Loading before it is collected`() {
@@ -105,7 +119,7 @@ class HomeViewModelTest {
     @Test
     fun `opening the app without the blocking service asks to enable it`() = runTest {
         blockingServiceMonitor.setEnabled(false)
-        viewModel = HomeViewModel(sessionRepository, sessionManager, installedAppsRepository, blockingServiceMonitor)
+        viewModel = homeViewModel()
         collectUiState()
 
         assertEquals(HomeDialog.BlockingServicePrompt, successState().dialog)
@@ -312,6 +326,45 @@ class HomeViewModelTest {
         viewModel.onAction(HomeAction.ScanFailed)
 
         assertEquals(HomeDialog.JoinFailed(JoinFailure.CameraUnavailable), successState().dialog)
+    }
+
+    @Test
+    fun `opening an invite link asks to confirm`() = runTest {
+        viewModel = homeViewModel(inviteCode = InviteCodec.encode(groupStudy))
+        collectUiState()
+
+        assertEquals(HomeDialog.ConfirmJoin(groupStudy, listOf(InstalledApp("a.pkg", "A"))), successState().dialog)
+    }
+
+    @Test
+    fun `opening a link that isn't an invite reports it`() = runTest {
+        viewModel = homeViewModel(inviteCode = "lockaltime://join?d=nope")
+        collectUiState()
+
+        assertEquals(HomeDialog.JoinFailed(JoinFailure.NotAnInvite), successState().dialog)
+    }
+
+    @Test
+    fun `opening an invite link without the blocking service asks to enable it`() = runTest {
+        blockingServiceMonitor.setEnabled(false)
+        viewModel = homeViewModel(inviteCode = InviteCodec.encode(groupStudy))
+        collectUiState()
+
+        assertEquals(HomeDialog.BlockingServicePrompt, successState().dialog)
+    }
+
+    @Test
+    fun `an invite link is handled once`() = runTest {
+        // After process death the route still carries the link, but the same saved state comes back.
+        val savedStateHandle = SavedStateHandle()
+        viewModel = homeViewModel(InviteCodec.encode(groupStudy), savedStateHandle)
+        collectUiState()
+        viewModel.onAction(HomeAction.DismissDialog)
+
+        viewModel = homeViewModel(InviteCodec.encode(groupStudy), savedStateHandle)
+        collectUiState()
+
+        assertNull(successState().dialog)
     }
 
     private fun TestScope.collectUiState() {

@@ -16,7 +16,7 @@ fun LockalTimeNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
-    NavHost(navController = navController, startDestination = HomeRoute, modifier = modifier) {
+    NavHost(navController = navController, startDestination = HomeRoute(), modifier = modifier) {
         homeScreen(
             onCreateSession = { navController.navigateToSessionEditor() },
             onEditSession = { id -> navController.navigateToSessionEditor(id) },

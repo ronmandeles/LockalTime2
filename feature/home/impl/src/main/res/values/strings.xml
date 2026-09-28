@@ -24,7 +24,7 @@
     <string name="share_session">Share</string>
     <string name="share_title">Invite others</string>
     <string name="share_qr_description">QR code for joining this session</string>
-    <string name="share_message">Others can tap Join in LockalTime and scan this to block the same apps.</string>
+    <string name="share_message">Others can scan this with their camera, or tap Join in LockalTime, to block the same apps.</string>
     <string name="share_ends_at">Their session ends at %1$s, like yours.</string>
     <string name="share_until_stopped">Their session runs until each of them stops it.</string>
     <string name="share_too_many_apps">This session blocks too many apps to fit in a QR code. Remove some apps from it to share it.</string>

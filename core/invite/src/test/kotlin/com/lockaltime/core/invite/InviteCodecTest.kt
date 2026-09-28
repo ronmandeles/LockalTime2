@@ -32,7 +32,9 @@ class InviteCodecTest {
 
     @Test
     fun `codes are URIs`() {
-        assertTrue(InviteCodec.encode(timed)!!.startsWith("lockaltime://join?d="))
+        // The literal is repeated in the app manifest's intent-filter; keep them in step.
+        assertEquals("lockaltime://join?d=", InviteCodec.URI_PREFIX)
+        assertTrue(InviteCodec.encode(timed)!!.startsWith(InviteCodec.URI_PREFIX))
     }
 
     // The v1 format: codes shown by this version must stay readable by later ones.

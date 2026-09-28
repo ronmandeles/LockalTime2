@@ -1,5 +1,6 @@
 package com.lockaltime.feature.home.impl
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lockaltime.core.data.repository.InstalledAppsRepository
@@ -10,26 +11,37 @@ import com.lockaltime.core.domain.SessionManager
 import com.lockaltime.core.invite.DecodedInvite
 import com.lockaltime.core.invite.InviteCodec
 import com.lockaltime.core.model.toInvite
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 import kotlin.time.Duration
 
-@HiltViewModel
-class HomeViewModel @Inject constructor(
+/** @param inviteCode an invite link the app was opened with, handled like a scanned code. */
+@HiltViewModel(assistedFactory = HomeViewModel.Factory::class)
+class HomeViewModel @AssistedInject constructor(
+    @Assisted inviteCode: String?,
+    savedStateHandle: SavedStateHandle,
     private val sessionRepository: SessionRepository,
     private val sessionManager: SessionManager,
     private val installedAppsRepository: InstalledAppsRepository,
     private val blockingServiceMonitor: BlockingServiceMonitor,
 ) : ViewModel() {
+
+    @AssistedFactory
+    interface Factory {
+        fun create(inviteCode: String?): HomeViewModel
+    }
 
     /** For opening Accessibility settings at this app's entry. */
     val blockingServiceComponent: String get() = blockingServiceMonitor.serviceComponent
@@ -77,6 +89,12 @@ class HomeViewModel @Inject constructor(
             if (!blockingServiceMonitor.isEnabled.first()) {
                 dialog.compareAndSet(null, HomeDialog.BlockingServicePrompt)
             }
+        }
+        // Handled once: after process death the route still carries the link, but the user has
+        // already answered the dialog it produced.
+        if (inviteCode != null && savedStateHandle.get<Boolean>(INVITE_HANDLED) != true) {
+            savedStateHandle[INVITE_HANDLED] = true
+            inviteScanned(inviteCode)
         }
     }
 
@@ -134,20 +152,23 @@ class HomeViewModel @Inject constructor(
     private fun inviteScanned(code: String) {
         // Closes the scanner, which would otherwise stay open while installed apps load.
         dialog.value = null
-        val state = uiState.value as? HomeUiState.Success ?: return
-        val invite = when (val decoded = InviteCodec.decode(code)) {
-            is DecodedInvite.Valid -> decoded.invite
-            DecodedInvite.TooNew -> return joinFailed(JoinFailure.TooNew)
-            DecodedInvite.NotAnInvite -> return joinFailed(JoinFailure.NotAnInvite)
-        }
-        when {
-            invite.isExpired(sessionManager.now()) -> joinFailed(JoinFailure.Expired)
-            state.activeSession != null -> joinFailed(JoinFailure.SessionRunning)
-            !state.isBlockingServiceEnabled -> dialog.value = HomeDialog.BlockingServicePrompt
-            else -> viewModelScope.launch {
-                val installed = installedAppsRepository.getLaunchableApps()
-                    .filter { it.packageName in invite.blockedPackages }
-                dialog.value = HomeDialog.ConfirmJoin(invite, installed)
+        viewModelScope.launch {
+            val invite = when (val decoded = InviteCodec.decode(code)) {
+                is DecodedInvite.Valid -> decoded.invite
+                DecodedInvite.TooNew -> return@launch joinFailed(JoinFailure.TooNew)
+                DecodedInvite.NotAnInvite -> return@launch joinFailed(JoinFailure.NotAnInvite)
+            }
+            // A code from a link arrives before the first state is built; a scanned one finds it ready.
+            val state = uiState.filterIsInstance<HomeUiState.Success>().first()
+            when {
+                invite.isExpired(sessionManager.now()) -> joinFailed(JoinFailure.Expired)
+                state.activeSession != null -> joinFailed(JoinFailure.SessionRunning)
+                !state.isBlockingServiceEnabled -> dialog.value = HomeDialog.BlockingServicePrompt
+                else -> {
+                    val installed = installedAppsRepository.getLaunchableApps()
+                        .filter { it.packageName in invite.blockedPackages }
+                    dialog.value = HomeDialog.ConfirmJoin(invite, installed)
+                }
             }
         }
     }
@@ -169,3 +190,5 @@ class HomeViewModel @Inject constructor(
         dialog.value = HomeDialog.JoinFailed(reason)
     }
 }
+
+private const val INVITE_HANDLED = "inviteHandled"

@@ -88,10 +88,15 @@ phone taps **Join** and scans it to block the same apps until the same end time.
   as `{"v":1,"id":…,"n":…,"p":[…],"e":…}`. The wire model is separate from the domain
   `SessionInvite`, like `core:datastore`'s entities. Unknown keys are ignored, and a higher `v`
   shows "update the app" rather than "not a valid code". `InviteCodecTest` pins the v1 format.
-  It's a URI so a deep link from the system camera can be added later without changing it.
-- **Scanning** is in-app: a CameraX preview whose frames are decoded by zxing-core
-  (`InviteScanner.kt`), so it works without Google Play services. It asks for the camera
-  permission on the first Join. **QR drawing** also uses zxing-core.
+- **Deep link.** `MainActivity` claims `lockaltime://join`, so scanning the code with the phone's
+  own camera app opens LockalTime straight into the join dialog. The Home destination declares
+  the link (`homeScreen`), the route carries the payload, and the ViewModel treats it exactly
+  like a scanned code. `MainActivity` is `singleTask` so the link lands in the one running
+  instance; links that arrive while the app is open are forwarded from `onNewIntent`.
+- **Scanning** in-app remains, for camera apps that ignore custom URI schemes: a CameraX preview
+  whose frames are decoded by zxing-core (`InviteScanner.kt`), so it works without Google Play
+  services. It asks for the camera permission on the first Join. **QR drawing** also uses
+  zxing-core.
 
 ### Next steps
 

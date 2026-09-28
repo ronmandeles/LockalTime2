@@ -18,12 +18,24 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.LockalTime">
 
+        <!-- singleTask: a single-activity app, so an invite link opened from another app's task
+             (the camera) must land in this one instance rather than start a second. -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Invite links, in InviteCodec's format: lockaltime://join?d=... -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="join"
+                    android:scheme="lockaltime" />
             </intent-filter>
         </activity>
     </application>

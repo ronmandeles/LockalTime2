@@ -69,11 +69,13 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
+/** @param inviteCode an invite the app was opened with, or null. */
 @Composable
 internal fun HomeScreen(
+    inviteCode: String?,
     onCreateSession: () -> Unit,
     onEditSession: (String) -> Unit,
-    viewModel: HomeViewModel = hiltViewModel(),
+    viewModel: HomeViewModel = hiltViewModel<HomeViewModel, HomeViewModel.Factory> { it.create(inviteCode) },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current

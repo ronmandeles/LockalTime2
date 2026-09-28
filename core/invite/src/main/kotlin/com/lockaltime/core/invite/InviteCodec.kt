@@ -24,9 +24,9 @@ sealed interface DecodedInvite {
 /**
  * Turns a [SessionInvite] into a short string for a QR code and back.
  *
- * Format: `lockaltime://join?d=` + base64url(zlib(JSON of [InviteWire])). It's a URI so a deep
- * link can open the app from the system camera later without changing the format. Compression
- * roughly halves the size, since package names share prefixes like `com.`.
+ * Format: `lockaltime://join?d=` + base64url(zlib(JSON of [InviteWire])). It's a URI so the app
+ * can claim it as a deep link and the system camera can open it directly. Compression roughly
+ * halves the size, since package names share prefixes like `com.`.
  *
  * This runs on Android (minSdk 26) as well as the JVM, so it sticks to Java APIs available there.
  */
@@ -35,7 +35,9 @@ object InviteCodec {
     /** Longer codes make QR codes too dense to scan reliably from a phone screen. */
     const val MAX_CODE_LENGTH = 1_500
 
-    private const val PREFIX = "lockaltime://join?d="
+    /** What every code starts with. The deep link that opens the app is built from it. */
+    const val URI_PREFIX = "lockaltime://join?d="
+
     private const val VERSION = 1
     private const val MAX_PACKAGES = 100
 
@@ -55,15 +57,15 @@ object InviteCodec {
     fun encode(invite: SessionInvite): String? {
         if (!isValid(invite)) return null
         val json = inviteJson.encodeToString(InviteWire.serializer(), invite.asWire(VERSION))
-        val code = PREFIX + base64Encoder.encodeToString(deflate(json.encodeToByteArray()))
+        val code = URI_PREFIX + base64Encoder.encodeToString(deflate(json.encodeToByteArray()))
         return code.takeIf { it.length <= MAX_CODE_LENGTH }
     }
 
     fun decode(code: String): DecodedInvite {
         val data = code.trim()
-        if (!data.startsWith(PREFIX)) return DecodedInvite.NotAnInvite
+        if (!data.startsWith(URI_PREFIX)) return DecodedInvite.NotAnInvite
         return try {
-            val json = inflate(base64Decoder.decode(data.removePrefix(PREFIX)))
+            val json = inflate(base64Decoder.decode(data.removePrefix(URI_PREFIX)))
                 ?: return DecodedInvite.NotAnInvite
             val element = inviteJson.parseToJsonElement(json.decodeToString())
             // Read the version first: a newer format may not fit InviteWire at all.
